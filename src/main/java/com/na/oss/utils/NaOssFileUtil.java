@@ -6,9 +6,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
@@ -249,5 +247,18 @@ public class NaOssFileUtil {
             return "text/xml";
         }
         return "image/jpg";
+    }
+
+    public static InputStream getInputStreamByAbsPath(String pdfOutputPath) throws IOException {
+        // 检查文件是否存在
+        File pdfFile = new File(pdfOutputPath);
+        if (!pdfFile.exists()) {
+            throw new FileNotFoundException("The file at " + pdfOutputPath + " does not exist.");
+        }
+        InputStream inputStream = new FileInputStream(pdfFile);
+        if (inputStream.available() == 0) {
+            throw new IOException("The file is empty.");
+        }
+        return inputStream;
     }
 }
