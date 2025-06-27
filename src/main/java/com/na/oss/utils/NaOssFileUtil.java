@@ -132,7 +132,7 @@ public class NaOssFileUtil {
             storagePath = trimSlashes(storagePath) + "/";
         } else {
             // 默认使用当前日期作为路径
-            storagePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd/")) + "/";
+            storagePath = trimSlashes(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd/"))) + "/";
         }
 
         // 加上路径前缀（如果有）
