@@ -16,7 +16,7 @@ public interface INaOssAliService {
      * @return
      */
     NaOssDto upload(NaOssDto dto,
-                    NaAutoOssConfig autoOssConfig);
+                    NaAutoOssConfig autoOssConfig) throws IOException;
 
     /**
      * 根据根据文件路径和文件名查询文件 images/2024/02/02/1706867083325.png

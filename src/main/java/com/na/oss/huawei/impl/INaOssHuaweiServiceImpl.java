@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 @Service
 public class INaOssHuaweiServiceImpl implements INaOssHuaweiService {
@@ -33,7 +34,7 @@ public class INaOssHuaweiServiceImpl implements INaOssHuaweiService {
     }
 
     @Override
-    public NaOssDto upload(NaOssDto dto, NaAutoOssConfig naAutoOssConfig) {
+    public NaOssDto upload(NaOssDto dto, NaAutoOssConfig naAutoOssConfig) throws IOException {
         dto.setFromType(NaOssDto.FromType.HUAWEI);
         naAutoOssConfig = (naAutoOssConfig != null) ? naAutoOssConfig : autoOssConfig;
 
@@ -63,28 +64,22 @@ public class INaOssHuaweiServiceImpl implements INaOssHuaweiService {
         /**
          * 上传到华为云
          */
-        try {
-            ObjectMetadata objectMetadata = new ObjectMetadata();
-            Long available = dto.getUploadFile() != null ? new ByteArrayInputStream(dto.getUploadFile().getBytes()).available() :
-                    NaOssFileUtil.getInputStreamSize(dto.getInputStream());
-            objectMetadata.setContentLength(available);
-            objectMetadata.setCacheControl("no-cache");
-            objectMetadata.setContentType(NaOssFileUtil.getContentType(dto.getFileName().substring(dto.getFileName().lastIndexOf("."))));
-            objectMetadata.setContentDisposition("inline; filename=\"" + dto.getFileName() + "\"");
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        Long available = dto.getUploadFile() != null ? new ByteArrayInputStream(dto.getUploadFile().getBytes()).available() :
+                NaOssFileUtil.getInputStreamSize(dto.getInputStream());
+        objectMetadata.setContentLength(available);
+        objectMetadata.setCacheControl("no-cache");
+        objectMetadata.setContentType(NaOssFileUtil.getContentType(dto.getFileName().substring(dto.getFileName().lastIndexOf("."))));
+        objectMetadata.setContentDisposition("inline; filename=\"" + dto.getFileName() + "\"");
 
-            PutObjectRequest putObjectRequest = new PutObjectRequest();
-            putObjectRequest.setBucketName(naAutoOssConfig.getHuaweiBucketName());
-            putObjectRequest.setInput(dto.getUploadFile() != null ? dto.getUploadFile().getInputStream() : dto.getInputStream());
-            putObjectRequest.setObjectKey(filePath);
-            putObjectRequest.setAcl(AccessControlList.REST_CANNED_PUBLIC_READ);
-            putObjectRequest.setMetadata(objectMetadata);
-            obsClient.putObject(putObjectRequest);
-        } catch (Exception e) {
-            e.printStackTrace();
-            //上传失败
-            dto.setStatus(NaOssFileOptStatus.ERROR);
-            return dto;
-        }
+        PutObjectRequest putObjectRequest = new PutObjectRequest();
+        putObjectRequest.setBucketName(naAutoOssConfig.getHuaweiBucketName());
+        putObjectRequest.setInput(dto.getUploadFile() != null ? dto.getUploadFile().getInputStream() : dto.getInputStream());
+        putObjectRequest.setObjectKey(filePath);
+        putObjectRequest.setAcl(AccessControlList.REST_CANNED_PUBLIC_READ);
+        putObjectRequest.setMetadata(objectMetadata);
+        obsClient.putObject(putObjectRequest);
+
         dto.setStatus(NaOssFileOptStatus.DONE);
         dto.setDomain(naAutoOssConfig.getHuaweiDomain());
         dto.setBucket(naAutoOssConfig.getHuaweiBucketName());
@@ -103,17 +98,12 @@ public class INaOssHuaweiServiceImpl implements INaOssHuaweiService {
 
 
         ObsClient obsClient = init(naAutoOssConfig);
-        try {
-            DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest();
-            deleteRequest.setBucketName(naAutoOssConfig.getHuaweiBucketName());
-            deleteRequest.addKeyAndVersion(dto.getStorageFilePath());
-            obsClient.deleteObjects(deleteRequest);
-        } catch (Exception e) {
-            e.printStackTrace();
-            //删除失败
-            dto.setStatus(NaOssFileOptStatus.ERROR);
-            return dto;
-        }
+
+        DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest();
+        deleteRequest.setBucketName(naAutoOssConfig.getHuaweiBucketName());
+        deleteRequest.addKeyAndVersion(dto.getStorageFilePath());
+        obsClient.deleteObjects(deleteRequest);
+
         dto.setStatus(NaOssFileOptStatus.REMOVE);
         return dto;
     }

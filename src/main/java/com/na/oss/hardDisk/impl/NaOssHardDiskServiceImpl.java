@@ -28,7 +28,7 @@ public class NaOssHardDiskServiceImpl implements INaOssHardDiskService {
      * @return 上传完成的 DTO
      */
     @Override
-    public NaOssDto upload(NaOssDto dto, NaAutoOssConfig naAutoOssConfig) {
+    public NaOssDto upload(NaOssDto dto, NaAutoOssConfig naAutoOssConfig) throws IOException {
         dto.setFromType(NaOssDto.FromType.LOCAL);
         naAutoOssConfig = (naAutoOssConfig != null) ? naAutoOssConfig : autoOssConfig;
 
@@ -65,31 +65,25 @@ public class NaOssHardDiskServiceImpl implements INaOssHardDiskService {
         // 创建目录（如果不存在）
         NaOssFileUtil.checkCreateFolder(targetFile);
 
-        try {
-            if (dto.getUploadFile() != null) {
-                // Spring 上传组件提供直接写入方法
-                dto.getUploadFile().transferTo(targetFile);
-            } else if (dto.getInputStream() != null) {
-                // 手动写入 InputStream 到文件
-                try (InputStream in = dto.getInputStream();
-                     OutputStream out = new FileOutputStream(targetFile)) {
-                    byte[] buffer = new byte[1024];
-                    int len;
-                    while ((len = in.read(buffer)) != -1) {
-                        out.write(buffer, 0, len);
-                    }
+        if (dto.getUploadFile() != null) {
+            // Spring 上传组件提供直接写入方法
+            dto.getUploadFile().transferTo(targetFile);
+        } else if (dto.getInputStream() != null) {
+            // 手动写入 InputStream 到文件
+            try (InputStream in = dto.getInputStream();
+                 OutputStream out = new FileOutputStream(targetFile)) {
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, len);
                 }
             }
-
-            // 上传成功后设置状态和相关元信息
-            dto.setStatus(NaOssFileOptStatus.DONE);
-            dto.setBucket(naAutoOssConfig.getLocalPath());
-            dto.setDomain(naAutoOssConfig.getDomain());
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            dto.setStatus(NaOssFileOptStatus.ERROR);
         }
+
+        // 上传成功后设置状态和相关元信息
+        dto.setStatus(NaOssFileOptStatus.DONE);
+        dto.setBucket(naAutoOssConfig.getLocalPath());
+        dto.setDomain(naAutoOssConfig.getDomain());
 
         return dto;
     }

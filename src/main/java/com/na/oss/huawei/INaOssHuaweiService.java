@@ -3,6 +3,8 @@ package com.na.oss.huawei;
 import com.na.oss.config.NaAutoOssConfig;
 import com.na.oss.dto.NaOssDto;
 
+import java.io.IOException;
+
 public interface INaOssHuaweiService {
     /**
      * 开发文档   https://support.huaweicloud.com/sdk-java-devg-obs/obs_21_0406.html
@@ -15,7 +17,7 @@ public interface INaOssHuaweiService {
      * @return
      */
     NaOssDto upload(NaOssDto dto,
-                    NaAutoOssConfig naAutoOssConfig);
+                    NaAutoOssConfig naAutoOssConfig) throws IOException;
 
     /**
      * 删除文件

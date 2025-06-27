@@ -14,6 +14,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+
 @Service
 public class NaOssQiNiuServiceImpl implements INaOssQiNiuService {
     @Autowired
@@ -38,7 +40,7 @@ public class NaOssQiNiuServiceImpl implements INaOssQiNiuService {
     }
 
     @Override
-    public NaOssDto upload(NaOssDto dto, NaAutoOssConfig naAutoOssConfig) {
+    public NaOssDto upload(NaOssDto dto, NaAutoOssConfig naAutoOssConfig) throws IOException {
         dto.setFromType(NaOssDto.FromType.QINIU);
         naAutoOssConfig = (naAutoOssConfig != null) ? naAutoOssConfig : autoOssConfig;
 
@@ -62,32 +64,26 @@ public class NaOssQiNiuServiceImpl implements INaOssQiNiuService {
         // 构建目标文件名和路径
         dto = NaOssFileUtil.conversionToDto(dto);
 
-        try {
+        if(naAutoOssConfig.getQiNiuAutoDelete()){
+            NaOssDto delDto = new NaOssDto(dto.getStorageFilePath() + dto.getNewFileName());
+            // 注意删除时传递的为全路径， 例如  images/2024/04/13/1712995109396.jpg
+            delete(delDto, naAutoOssConfig);
+        }
 
-            if(naAutoOssConfig.getQiNiuAutoDelete()){
-                NaOssDto delDto = new NaOssDto(dto.getStorageFilePath() + dto.getNewFileName());
-                // 注意删除时传递的为全路径， 例如  images/2024/04/13/1712995109396.jpg
-                delete(delDto, naAutoOssConfig);
-            }
+        String token = getToken(naAutoOssConfig);
 
-            String token = getToken(naAutoOssConfig);
-
-            UploadManager uploadManager = initUploadManager(naAutoOssConfig);
-            Response response = uploadManager.put(dto.getUploadFile() != null ? dto.getUploadFile().getInputStream() : dto.getInputStream(),
-                    dto.getStorageFilePath() + dto.getNewFileName(),
-                    token,
-                    null,
-                    null);
-            if (!response.isOK()) {
-                dto.setStatus(NaOssFileOptStatus.ERROR);
-                return dto;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            //上传失败
+        UploadManager uploadManager = initUploadManager(naAutoOssConfig);
+        Response response = uploadManager.put(dto.getUploadFile() != null ? dto.getUploadFile().getInputStream() : dto.getInputStream(),
+                dto.getStorageFilePath() + dto.getNewFileName(),
+                token,
+                null,
+                null);
+        if (!response.isOK()) {
             dto.setStatus(NaOssFileOptStatus.ERROR);
+            dto.setQiniuResponse(response);
             return dto;
         }
+
         dto.setStatus(NaOssFileOptStatus.DONE);
         dto.setDomain(autoOssConfig.getQiNiuDomain());
         dto.setBucket(autoOssConfig.getQiNiuBucketName());
@@ -95,7 +91,7 @@ public class NaOssQiNiuServiceImpl implements INaOssQiNiuService {
     }
 
     @Override
-    public NaOssDto delete(NaOssDto dto, NaAutoOssConfig naAutoOssConfig) {
+    public NaOssDto delete(NaOssDto dto, NaAutoOssConfig naAutoOssConfig) throws QiniuException {
         dto.setFromType(NaOssDto.FromType.QINIU);
         naAutoOssConfig = (naAutoOssConfig != null) ? naAutoOssConfig : autoOssConfig;
         if(StringUtils.isEmpty(dto.getStorageFilePath())){
@@ -103,14 +99,9 @@ public class NaOssQiNiuServiceImpl implements INaOssQiNiuService {
             return dto;
         }
         BucketManager bucketManager = initBucketManager(naAutoOssConfig);
-        try {
-            bucketManager.delete(autoOssConfig.getQiNiuBucketName(), dto.getStorageFilePath());
-        } catch (QiniuException e) {
-            e.printStackTrace();
-            //删除失败
-            dto.setStatus(NaOssFileOptStatus.ERROR);
-            return dto;
-        }
+
+        bucketManager.delete(autoOssConfig.getQiNiuBucketName(), dto.getStorageFilePath());
+
         dto.setStatus(NaOssFileOptStatus.REMOVE);
         return dto;
     }

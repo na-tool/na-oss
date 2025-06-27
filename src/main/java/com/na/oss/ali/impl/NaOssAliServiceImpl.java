@@ -35,7 +35,7 @@ public class NaOssAliServiceImpl implements INaOssAliService {
     }
 
     @Override
-    public NaOssDto upload(NaOssDto dto, NaAutoOssConfig naAutoOssConfig) {
+    public NaOssDto upload(NaOssDto dto, NaAutoOssConfig naAutoOssConfig) throws IOException {
         dto.setFromType(NaOssDto.FromType.ALI);
         naAutoOssConfig = (naAutoOssConfig != null) ? naAutoOssConfig : autoOssConfig;
 
@@ -66,22 +66,16 @@ public class NaOssAliServiceImpl implements INaOssAliService {
         /**
          * 上传到阿里云
          */
-        try {
-            ObjectMetadata objectMetadata = new ObjectMetadata();
-            objectMetadata.setContentLength(dto.getUploadFile() != null ?
-                    new ByteArrayInputStream(dto.getUploadFile().getBytes()).available() : NaOssFileUtil.getInputStreamSize(dto.getInputStream()));
-            objectMetadata.setCacheControl("no-cache");
-            objectMetadata.setHeader("Pragma", "no-cache");
-            objectMetadata.setContentType(NaOssFileUtil.getContentType(dto.getFileName().substring(dto.getFileName().lastIndexOf("."))));
-            objectMetadata.setContentDisposition("inline; filename=\"" + dto.getFileName() + "\"");
-            ossClient.putObject(naAutoOssConfig.getAliBucketName(), filePath, dto.getUploadFile() != null ? new
-                    ByteArrayInputStream(dto.getUploadFile().getBytes()) : dto.getInputStream(),objectMetadata);
-        } catch (Exception e) {
-            e.printStackTrace();
-            //上传失败
-            dto.setStatus(NaOssFileOptStatus.ERROR);
-            return dto;
-        }
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        objectMetadata.setContentLength(dto.getUploadFile() != null ?
+                new ByteArrayInputStream(dto.getUploadFile().getBytes()).available() : NaOssFileUtil.getInputStreamSize(dto.getInputStream()));
+        objectMetadata.setCacheControl("no-cache");
+        objectMetadata.setHeader("Pragma", "no-cache");
+        objectMetadata.setContentType(NaOssFileUtil.getContentType(dto.getFileName().substring(dto.getFileName().lastIndexOf("."))));
+        objectMetadata.setContentDisposition("inline; filename=\"" + dto.getFileName() + "\"");
+        ossClient.putObject(naAutoOssConfig.getAliBucketName(), filePath, dto.getUploadFile() != null ? new
+                ByteArrayInputStream(dto.getUploadFile().getBytes()) : dto.getInputStream(),objectMetadata);
+
         dto.setStatus(NaOssFileOptStatus.DONE);
         dto.setDomain(naAutoOssConfig.getAliDomain());
         dto.setBucket(naAutoOssConfig.getAliBucketName());

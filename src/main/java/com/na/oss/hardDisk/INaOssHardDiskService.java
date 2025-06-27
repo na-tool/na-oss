@@ -3,6 +3,8 @@ package com.na.oss.hardDisk;
 import com.na.oss.config.NaAutoOssConfig;
 import com.na.oss.dto.NaOssDto;
 
+import java.io.IOException;
+
 public interface INaOssHardDiskService {
     /**
      * 上传文件
@@ -11,7 +13,7 @@ public interface INaOssHardDiskService {
      * @return
      */
     NaOssDto upload(NaOssDto dto,
-                    NaAutoOssConfig naAutoOssConfig);
+                    NaAutoOssConfig naAutoOssConfig) throws IOException;
 
     /**
      * 删除文件

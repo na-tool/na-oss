@@ -2,6 +2,7 @@ package com.na.oss.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.na.oss.enums.NaOssFileOptStatus;
+import com.qiniu.http.Response;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -72,6 +73,8 @@ public class NaOssDto {
      * 根据来源  选填
      */
     private String fromType = FromType.QINIU;
+
+    private Response qiniuResponse;
 
     public class FromType {
         public final static String QINIU = "QINIU";
