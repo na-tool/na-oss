@@ -12,11 +12,17 @@ import com.qiniu.storage.UploadManager;
 import com.qiniu.util.Auth;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 
 @Service
+@ConditionalOnProperty(
+        prefix = "na.oss",
+        name = "qiNiuAccessKey",
+        matchIfMissing = false  // 不写 qiNiuAccessKey 就不加载
+)
 public class NaOssQiNiuServiceImpl implements INaOssQiNiuService {
     @Autowired
     private NaAutoOssConfig autoOssConfig;

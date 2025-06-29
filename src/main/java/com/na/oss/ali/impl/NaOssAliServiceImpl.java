@@ -9,6 +9,7 @@ import com.na.oss.dto.NaOssDto;
 import com.na.oss.enums.NaOssFileOptStatus;
 import com.na.oss.utils.NaOssFileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.ServletOutputStream;
@@ -23,6 +24,11 @@ import java.nio.file.Paths;
 import java.util.List;
 
 @Service
+@ConditionalOnProperty(
+        prefix = "na.oss",
+        name = "aliAccessKey",
+        matchIfMissing = false  // 不写 aliAccessKey 就不加载
+)
 public class NaOssAliServiceImpl implements INaOssAliService {
 
     @Autowired

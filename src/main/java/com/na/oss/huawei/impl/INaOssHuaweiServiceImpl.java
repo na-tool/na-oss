@@ -8,12 +8,18 @@ import com.na.oss.utils.NaOssFileUtil;
 import com.obs.services.ObsClient;
 import com.obs.services.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 @Service
+@ConditionalOnProperty(
+        prefix = "na.oss",
+        name = "huaweiAccessKey",
+        matchIfMissing = false  // 不写 huaweiAccessKey 就不加载
+)
 public class INaOssHuaweiServiceImpl implements INaOssHuaweiService {
     @Autowired
     private NaAutoOssConfig autoOssConfig;

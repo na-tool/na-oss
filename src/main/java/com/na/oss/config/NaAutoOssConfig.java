@@ -77,10 +77,10 @@ public class NaAutoOssConfig {
     /**
      * 七牛云密钥对  【必填】
      */
-    @Builder.Default
-    private String qiNiuAccessKey = "defaultAccessKey";
-    @Builder.Default
-    private String qiNiuSecretKey = "defaultSecretKey";
+//    @Builder.Default
+    private String qiNiuAccessKey;
+//    @Builder.Default
+    private String qiNiuSecretKey;
     /**
      * 空间名称  【必填】
      */
