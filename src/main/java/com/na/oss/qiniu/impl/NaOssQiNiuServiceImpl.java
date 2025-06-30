@@ -70,11 +70,16 @@ public class NaOssQiNiuServiceImpl implements INaOssQiNiuService {
         // 构建目标文件名和路径
         dto = NaOssFileUtil.conversionToDto(dto);
 
-        if(naAutoOssConfig.getQiNiuAutoDelete()){
-            NaOssDto delDto = new NaOssDto(dto.getStorageFilePath() + dto.getNewFileName());
-            // 注意删除时传递的为全路径， 例如  images/2024/04/13/1712995109396.jpg
-            delete(delDto, naAutoOssConfig);
+        try {
+            if(naAutoOssConfig.getQiNiuAutoDelete()){
+                NaOssDto delDto = new NaOssDto(dto.getStorageFilePath() + dto.getNewFileName());
+                // 注意删除时传递的为全路径， 例如  images/2024/04/13/1712995109396.jpg
+                delete(delDto, naAutoOssConfig);
+            }
+        }catch (Exception e){
+            System.out.println("删除文件失败，请检查配置" + e);
         }
+
 
         String token = getToken(naAutoOssConfig);
 
