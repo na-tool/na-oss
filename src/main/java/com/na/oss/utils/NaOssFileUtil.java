@@ -211,43 +211,121 @@ public class NaOssFileUtil {
      * 设置设置 HTTP 头 里边的 Content-Type
      * txt 格式经过测试，不需要转换 上传之后就是 text/plain。其他未测试
      * 已知  如果 Content-Type = .jpeg 访问地址会直接下载，本方法也是解决此问题
-     * @param FilenameExtension
+     * @param extension
      * @return
      */
-    public static String getContentType(String FilenameExtension) {
-        if (FilenameExtension.equalsIgnoreCase(".bmp")) {
-            return "image/bmp";
-        }
-        if (FilenameExtension.equalsIgnoreCase(".gif")) {
-            return "image/gif";
-        }
-        if (FilenameExtension.equalsIgnoreCase(".jpeg") ||
-                FilenameExtension.equalsIgnoreCase(".jpg") ||
-                FilenameExtension.equalsIgnoreCase(".png")) {
-            return "image/jpg";
-        }
-        if (FilenameExtension.equalsIgnoreCase(".html")) {
-            return "text/html";
+    public static String getContentType(String extension) {
+
+        if (extension == null || extension.trim().isEmpty()) {
+            return "application/octet-stream";
         }
 
-        if (FilenameExtension.equalsIgnoreCase(".txt")) {
-            return "text/plain";
+        extension = extension.toLowerCase();
+
+        // 图片
+        switch (extension) {
+            case ".bmp":
+                return "image/bmp";
+
+            case ".gif":
+                return "image/gif";
+
+            case ".png":
+                return "image/png";
+
+            case ".jpeg":
+            case ".jpg":
+                return "image/jpeg";
+
+            case ".webp":
+                return "image/webp";
+
+            // 文本
+            case ".txt":
+                return "text/plain";
+
+            case ".html":
+                return "text/html";
+
+            case ".xml":
+                return "text/xml";
+
+            case ".json":
+                return "application/json";
+
+            // Word
+            case ".doc":
+                return "application/msword";
+
+            case ".docx":
+                return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+            // Excel
+            case ".xls":
+                return "application/vnd.ms-excel";
+
+            case ".xlsx":
+                return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+            // PPT
+            case ".ppt":
+                return "application/vnd.ms-powerpoint";
+
+            case ".pptx":
+                return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+
+            // PDF
+            case ".pdf":
+                return "application/pdf";
+
+            // 音频
+            case ".mp3":
+                return "audio/mpeg";
+
+            case ".wav":
+                return "audio/wav";
+
+            case ".aac":
+                return "audio/aac";
+
+            case ".ogg":
+                return "audio/ogg";
+
+            case ".m4a":
+                return "audio/mp4";
+
+            // 视频
+            case ".mp4":
+                return "video/mp4";
+
+            case ".avi":
+                return "video/x-msvideo";
+
+            case ".mov":
+                return "video/quicktime";
+
+            case ".wmv":
+                return "video/x-ms-wmv";
+
+            case ".flv":
+                return "video/x-flv";
+
+            case ".mkv":
+                return "video/x-matroska";
+
+            // 压缩包
+            case ".zip":
+                return "application/zip";
+
+            case ".rar":
+                return "application/x-rar-compressed";
+
+            case ".7z":
+                return "application/x-7z-compressed";
+
+            default:
+                return "application/octet-stream";
         }
-        if (FilenameExtension.equalsIgnoreCase(".vsd")) {
-            return "application/vnd.visio";
-        }
-        if (FilenameExtension.equalsIgnoreCase(".pptx") ||
-                FilenameExtension.equalsIgnoreCase(".ppt")) {
-            return "application/vnd.ms-powerpoint";
-        }
-        if (FilenameExtension.equalsIgnoreCase(".docx") ||
-                FilenameExtension.equalsIgnoreCase(".doc")) {
-            return "application/msword";
-        }
-        if (FilenameExtension.equalsIgnoreCase(".xml")) {
-            return "text/xml";
-        }
-        return "image/jpg";
     }
 
     public static InputStream getInputStreamByAbsPath(String pdfOutputPath) throws IOException {

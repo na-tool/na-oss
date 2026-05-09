@@ -75,7 +75,16 @@ public class INaOssHuaweiServiceImpl implements INaOssHuaweiService {
                 NaOssFileUtil.getInputStreamSize(dto.getInputStream());
         objectMetadata.setContentLength(available);
         objectMetadata.setCacheControl("no-cache");
-        objectMetadata.setContentType(NaOssFileUtil.getContentType(dto.getFileName().substring(dto.getFileName().lastIndexOf("."))));
+
+        String fileName = dto.getFileName();
+        String extension = "";
+        int index = fileName.lastIndexOf(".");
+        if (index != -1) {
+            extension = fileName.substring(index);
+        }
+        objectMetadata.setContentType(
+                NaOssFileUtil.getContentType(extension)
+        );
         objectMetadata.setContentDisposition("inline; filename=\"" + dto.getFileName() + "\"");
 
         PutObjectRequest putObjectRequest = new PutObjectRequest();
