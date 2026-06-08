@@ -14,13 +14,13 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -86,6 +86,216 @@ public class NaOssAliServiceImpl implements INaOssAliService {
         dto.setDomain(naAutoOssConfig.getAliDomain());
         dto.setBucket(naAutoOssConfig.getAliBucketName());
         return dto;
+    }
+
+    @Override
+    public NaOssDto uploadSlice(NaOssDto dto, NaAutoOssConfig naAutoOssConfig,Long partSize) throws IOException {
+        dto.setFromType(NaOssDto.FromType.ALI);
+
+        naAutoOssConfig = (naAutoOssConfig != null)
+                ? naAutoOssConfig
+                : autoOssConfig;
+
+        // 文件为空
+        if (dto.isFileNull()) {
+            dto.setStatus(NaOssFileOptStatus.DATA_CHECK_ERROR);
+            return dto;
+        }
+
+        // 文件类型校验
+        if (!NaOssFileUtil.checkFileType(dto, naAutoOssConfig)) {
+            dto.setStatus(NaOssFileOptStatus.DATA_CHECK_ERROR);
+            return dto;
+        }
+
+        // 文件大小校验
+        if (!NaOssFileUtil.checkFileSize(dto, naAutoOssConfig)) {
+            dto.setStatus(NaOssFileOptStatus.DATA_CHECK_ERROR);
+            return dto;
+        }
+
+        // 转换文件名称
+        dto = NaOssFileUtil.conversionToDto(dto);
+
+        // OSS对象名称
+        String objectName =
+                dto.getStorageFilePath() + dto.getNewFileName();
+
+        OSS ossClient = init(naAutoOssConfig);
+
+        File tempFile = null;
+
+        String uploadId = null;
+
+        try {
+
+            /**
+             * 将 MultipartFile 或 InputStream
+             * 统一转换为临时文件
+             */
+            tempFile = File.createTempFile("oss_", ".tmp");
+
+            if (dto.getUploadFile() != null) {
+
+                dto.getUploadFile().transferTo(tempFile);
+
+            } else {
+
+                try (
+                        InputStream in = dto.getInputStream();
+                        FileOutputStream out = new FileOutputStream(tempFile)
+                ) {
+
+                    byte[] buffer = new byte[8192];
+                    int len;
+
+                    while ((len = in.read(buffer)) != -1) {
+                        out.write(buffer, 0, len);
+                    }
+                }
+            }
+
+            // 文件总大小
+            long fileSize = tempFile.length();
+
+            // 每个分片5MB,分片最小值为100 KB
+            if(partSize == null || partSize < 101){
+                partSize = 5 * 1024 * 1024L;
+            }
+
+            /**
+             * 初始化分片上传
+             */
+            InitiateMultipartUploadRequest request =
+                    new InitiateMultipartUploadRequest(
+                            naAutoOssConfig.getAliBucketName(),
+                            objectName);
+
+            InitiateMultipartUploadResult result =
+                    ossClient.initiateMultipartUpload(request);
+
+            uploadId = result.getUploadId();
+
+            // 保存所有Part信息
+            List<PartETag> partETags = new ArrayList<>();
+
+            // 分片数量
+            int partCount = (int) (fileSize / partSize);
+
+            if (fileSize % partSize != 0) {
+                partCount++;
+            }
+
+            /**
+             * 循环上传所有分片
+             */
+            for (int i = 0; i < partCount; i++) {
+
+                long startPos = i * partSize;
+
+                long currentPartSize =
+                        Math.min(partSize, fileSize - startPos);
+
+                // 每个分片重新打开文件流
+                try (FileInputStream inputStream =
+                             new FileInputStream(tempFile)) {
+
+                    // 定位到当前分片
+                    inputStream.skip(startPos);
+
+                    UploadPartRequest uploadPartRequest =
+                            new UploadPartRequest();
+
+                    uploadPartRequest.setBucketName(
+                            naAutoOssConfig.getAliBucketName());
+
+                    uploadPartRequest.setKey(objectName);
+
+                    uploadPartRequest.setUploadId(uploadId);
+
+                    uploadPartRequest.setInputStream(inputStream);
+
+                    uploadPartRequest.setPartSize(currentPartSize);
+
+                    // 分片号从1开始
+                    uploadPartRequest.setPartNumber(i + 1);
+
+                    // 上传当前分片
+                    UploadPartResult uploadPartResult =
+                            ossClient.uploadPart(uploadPartRequest);
+
+                    // 保存ETag
+                    partETags.add(
+                            uploadPartResult.getPartETag());
+                }
+            }
+
+            /**
+             * OSS要求按照PartNumber排序
+             */
+            Collections.sort(
+                    partETags,
+                    Comparator.comparingInt(
+                            PartETag::getPartNumber));
+
+            /**
+             * 合并所有分片
+             */
+            CompleteMultipartUploadRequest completeRequest =
+                    new CompleteMultipartUploadRequest(
+                            naAutoOssConfig.getAliBucketName(),
+                            objectName,
+                            uploadId,
+                            partETags);
+
+            ossClient.completeMultipartUpload(
+                    completeRequest);
+
+            // 上传成功
+            dto.setStatus(NaOssFileOptStatus.DONE);
+            dto.setDomain(
+                    naAutoOssConfig.getAliDomain());
+            dto.setBucket(
+                    naAutoOssConfig.getAliBucketName());
+
+            return dto;
+
+        } catch (Exception e) {
+
+            // 上传失败，取消分片任务
+            if (uploadId != null) {
+
+                try {
+
+                    AbortMultipartUploadRequest abortRequest =
+                            new AbortMultipartUploadRequest(
+                                    naAutoOssConfig.getAliBucketName(),
+                                    objectName,
+                                    uploadId);
+
+                    ossClient.abortMultipartUpload(
+                            abortRequest);
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+
+            dto.setStatus(NaOssFileOptStatus.ERROR);
+
+            throw new RuntimeException(
+                    "OSS分片上传失败", e);
+
+        } finally {
+
+            // 删除临时文件
+            if (tempFile != null && tempFile.exists()) {
+                tempFile.delete();
+            }
+
+            // 关闭OSS客户端
+            ossClient.shutdown();
+        }
     }
 
     @Override

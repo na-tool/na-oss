@@ -18,6 +18,9 @@ public interface INaOssAliService {
     NaOssDto upload(NaOssDto dto,
                     NaAutoOssConfig autoOssConfig) throws IOException;
 
+    // 新增 分片上传
+    NaOssDto uploadSlice(NaOssDto dto, NaAutoOssConfig naAutoOssConfig,Long partSize) throws IOException;
+
     /**
      * 根据根据文件路径和文件名查询文件 images/2024/02/02/1706867083325.png
      * @param dto
