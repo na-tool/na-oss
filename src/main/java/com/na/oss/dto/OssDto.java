@@ -23,7 +23,7 @@ import java.io.InputStream;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class NaOssDto {
+public class OssDto {
 
     /**
      * 文件唯一标识（由业务方按需使用）
@@ -160,7 +160,7 @@ public class NaOssDto {
      *
      * @param storageFilePath 文件全路径
      */
-    public NaOssDto(String storageFilePath) {
+    public OssDto(String storageFilePath) {
         this.storageFilePath = storageFilePath;
     }
 }
